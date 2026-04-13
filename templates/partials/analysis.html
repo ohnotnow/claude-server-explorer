@@ -1,0 +1,15 @@
+<h2 class="section-title">Strategic Analysis</h2>
+<div class="analysis-block">
+    {% for paragraph in fleet_analysis_paragraphs %}
+        <p>{{ paragraph }}</p>
+    {% endfor %}
+
+    {% if fleet_recommendations %}
+    <h3 class="section-title" style="margin-top: 20px; font-size: 1.125rem">Recommendations</h3>
+    <ul class="rec-list">
+        {% for rec in fleet_recommendations %}
+        <li><span class="rec-num">{{ loop.index }}.</span>{{ rec }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>

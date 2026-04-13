@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Fleet Security Report{% endblock %}
+
+{% block body %}
+{% include 'partials/header.html' %}
+
+{# Stats row #}
+<div class="section"><div class="wrap">
+    {% include 'partials/stats.html' %}
+</div></div>
+
+{# Critical & High Findings #}
+{% if critical_findings or high_findings %}
+<div class="section"><div class="wrap">
+    {% include 'partials/findings_summary.html' %}
+</div></div>
+{% endif %}
+
+{# Strategic Analysis #}
+{% if fleet_analysis_paragraphs or fleet_recommendations %}
+<div class="section"><div class="wrap">
+    {% include 'partials/analysis.html' %}
+</div></div>
+{% endif %}
+
+{# Server Grid #}
+<div class="section"><div class="wrap">
+    <h2 class="section-title">Servers</h2>
+
+    <div class="grid-controls no-print">
+        <input type="text" id="server-search" class="search-input" placeholder="Filter by hostname...">
+        <button class="filter-btn active" data-filter="all">All</button>
+        {% for sev_key in ["critical", "high", "medium", "low", "info"] %}
+            {% if total_counts[sev_key] > 0 %}
+            <button class="filter-btn" data-filter="{{ sev_key }}">{{ SEV[sev_key].label }} ({{ total_counts[sev_key] }})</button>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="server-grid">
+        {% for srv in servers %}
+            {% include 'partials/server_card.html' %}
+        {% endfor %}
+    </div>
+
+    <p style="font-size: 0.875rem; color: #999; margin-top: 16px">
+        For a detailed report on any server, run:
+        <code style="background: #fff; padding: 2px 8px; border-radius: 4px">uv run report.py --server hostname</code>
+    </p>
+</div></div>
+
+{% include 'partials/footer.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script>{% include 'js/fleet.js' %}</script>
+{% endblock %}

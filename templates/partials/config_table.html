@@ -1,0 +1,24 @@
+<h2 class="section-title">Configuration Checks</h2>
+<p class="section-intro">{{ checks_summary }}</p>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 80px">Result</th>
+                <th style="width: 140px">Category</th>
+                <th>Check</th>
+                <th>Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in checks %}
+            <tr>
+                <td><span class="check-result check-{{ c.result }}">{{ c.result | upper }}</span></td>
+                <td>{{ c.category }}</td>
+                <td>{{ c.check_name }}</td>
+                <td style="color: #666">{{ c.detail }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

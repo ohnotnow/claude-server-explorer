@@ -1,0 +1,23 @@
+<h2 class="section-title">Fleet Position</h2>
+<div class="comparison">
+    <div class="comp-item this-server">
+        <div class="comp-value" style="color: {{ score | score_colour }}">{{ score }}</div>
+        <div class="comp-label">This server</div>
+    </div>
+    <div class="comp-item">
+        <div class="comp-value">{{ fleet.avg | round | int }}</div>
+        <div class="comp-label">Fleet average</div>
+    </div>
+    <div class="comp-item">
+        <div class="comp-value" style="color: {{ fleet.best | score_colour }}">{{ fleet.best }}</div>
+        <div class="comp-label">Best in fleet</div>
+    </div>
+    <div class="comp-item">
+        <div class="comp-value" style="color: {{ fleet.worst | score_colour }}">{{ fleet.worst }}</div>
+        <div class="comp-label">Needs most work</div>
+    </div>
+    <div class="comp-item">
+        <div class="comp-value">{{ rank }} <span style="font-size: 0.875rem; font-weight: 400; color: #666">of {{ fleet.total }}</span></div>
+        <div class="comp-label">Rank</div>
+    </div>
+</div>

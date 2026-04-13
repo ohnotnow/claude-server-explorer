@@ -1,0 +1,11 @@
+# Server Explorer configuration
+#
+# Copy this file to .server-explorer.conf and fill in your values.
+# .server-explorer.conf is gitignored so your local settings stay local.
+
+# HTTP proxy for package index commands (apt update, dnf check-update) on remote servers
+# sitting behind private subnets. Most servers already have this configured in their
+# package manager settings — this is a fallback for those that don't.
+# Common in .ac.uk environments behind JANET proxies.
+# Note: KEV and EPSS lookups run locally and do not need this proxy.
+# proxy=http://wwwcache.example.ac.uk:8080

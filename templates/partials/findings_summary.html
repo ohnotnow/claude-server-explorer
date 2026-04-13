@@ -1,0 +1,40 @@
+<h2 class="section-title">Critical &amp; High Findings</h2>
+<div class="analysis-block">
+    {% if critical_findings %}
+    <div class="findings-group" id="findings-critical">
+        <div class="findings-group-title">
+            <span class="badge" style="background: {{ SEV.critical.bg }}; color: {{ SEV.critical.color }}">Critical</span>
+            <span style="color: #999; font-weight: 400; font-size: 0.9375rem">({{ critical_findings | length }})</span>
+        </div>
+        <ul class="findings-list">
+            {% for f in critical_findings %}
+            <li>
+                <a href="#server-{{ f.hostname }}" style="text-decoration: none; color: inherit; display: contents">
+                    <span class="server-name">{{ f.hostname }}</span>
+                    <span>{{ f.title }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if high_findings %}
+    <div class="findings-group" id="findings-high">
+        <div class="findings-group-title">
+            <span class="badge" style="background: {{ SEV.high.bg }}; color: {{ SEV.high.color }}">High</span>
+            <span style="color: #999; font-weight: 400; font-size: 0.9375rem">({{ high_findings | length }})</span>
+        </div>
+        <ul class="findings-list">
+            {% for f in high_findings %}
+            <li>
+                <a href="#server-{{ f.hostname }}" style="text-decoration: none; color: inherit; display: contents">
+                    <span class="server-name">{{ f.hostname }}</span>
+                    <span>{{ f.title }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>

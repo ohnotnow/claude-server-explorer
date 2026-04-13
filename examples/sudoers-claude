@@ -1,0 +1,83 @@
+# /etc/sudoers.d/claude
+#
+# Least-privilege sudo rules for the Claude server-explore and security-explore skills.
+# Everything here is read-only inspection -- no installs, no service changes, no writes.
+#
+# Install:
+#   sudo cp sudoers-claude /etc/sudoers.d/claude
+#   sudo chmod 0440 /etc/sudoers.d/claude
+#   sudo visudo -c   # always validate after copying
+#
+# Paths below are for Debian/Ubuntu. Adjust if your distro puts binaries elsewhere
+# (e.g. some systems have ss at /usr/sbin/ss). Run `which <command>` to check.
+
+# --- Network inspection ---
+# ss with sudo shows which process owns each listening port.
+# Without sudo you see the ports but not the process names.
+claude ALL=(ALL) NOPASSWD: /usr/bin/ss
+
+# --- Package index refresh (read-only) ---
+# `apt update` refreshes the package list. It does NOT install anything.
+# `apt list` just prints available upgrades.
+# `dnf check-update` / `yum updateinfo` are the RHEL equivalents.
+claude ALL=(ALL) NOPASSWD: /usr/bin/apt update
+claude ALL=(ALL) NOPASSWD: /usr/bin/apt list *
+claude ALL=(ALL) NOPASSWD: /usr/bin/dnf check-update *
+claude ALL=(ALL) NOPASSWD: /usr/bin/yum updateinfo *
+claude ALL=(ALL) NOPASSWD: /usr/bin/apk update
+claude ALL=(ALL) NOPASSWD: /usr/sbin/apk update
+
+# --- Firewall inspection ---
+claude ALL=(ALL) NOPASSWD: /usr/sbin/iptables -L -n
+claude ALL=(ALL) NOPASSWD: /usr/sbin/iptables -L -n -v
+claude ALL=(ALL) NOPASSWD: /usr/sbin/nft list ruleset
+claude ALL=(ALL) NOPASSWD: /usr/sbin/ufw status
+claude ALL=(ALL) NOPASSWD: /usr/bin/firewall-cmd --list-all
+
+# --- Authentication and access checks ---
+# Reading these files lets the skill check for stale accounts, weak sudo rules,
+# password expiry, and authorised SSH keys.
+claude ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/shadow
+claude ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/gshadow
+claude ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/sudoers
+claude ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/sudoers.d/*
+claude ALL=(ALL) NOPASSWD: /usr/bin/cat /root/.ssh/authorized_keys
+claude ALL=(ALL) NOPASSWD: /usr/bin/cat /home/*/.ssh/authorized_keys
+
+# --- Docker (read-only subcommands only) ---
+# If docker is present, the skill inspects containers for image age, secrets in
+# environment variables, port exposure, and socket mounts. These are all read-only.
+claude ALL=(ALL) NOPASSWD: /usr/bin/docker ps *
+claude ALL=(ALL) NOPASSWD: /usr/bin/docker inspect *
+claude ALL=(ALL) NOPASSWD: /usr/bin/docker images *
+claude ALL=(ALL) NOPASSWD: /usr/bin/docker network ls
+claude ALL=(ALL) NOPASSWD: /usr/bin/docker system df
+claude ALL=(ALL) NOPASSWD: /usr/bin/docker logs *
+
+# --- File discovery ---
+# find is used to locate SUID/SGID binaries, .env files, and private keys.
+# NOTE: `find` with sudo can also run `-exec`, which could execute arbitrary
+# commands as root. If this concerns you, remove the line below -- the skill
+# will skip the SUID check and note it was skipped. The rest of the scan
+# still works fine without it.
+claude ALL=(ALL) NOPASSWD: /usr/bin/find
+
+# --- Cron inspection ---
+# Reading other users' crontabs to check for risky scheduled jobs.
+claude ALL=(ALL) NOPASSWD: /usr/bin/crontab -l *
+
+# --- Security tooling ---
+claude ALL=(ALL) NOPASSWD: /usr/sbin/auditctl -l
+claude ALL=(ALL) NOPASSWD: /usr/bin/fail2ban-client status *
+claude ALL=(ALL) NOPASSWD: /usr/bin/wg show
+
+# --- File permissions ---
+# stat is used to check permissions on sensitive files like /etc/shadow and SSH keys.
+claude ALL=(ALL) NOPASSWD: /usr/bin/stat *
+
+# --- Misc read-only ---
+claude ALL=(ALL) NOPASSWD: /usr/bin/lastlog
+claude ALL=(ALL) NOPASSWD: /usr/bin/journalctl *
+claude ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *
+claude ALL=(ALL) NOPASSWD: /usr/bin/wc *
+claude ALL=(ALL) NOPASSWD: /usr/bin/head *

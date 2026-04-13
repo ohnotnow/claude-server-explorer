@@ -1,0 +1,17 @@
+<div class="finding" style="background: {{ SEV[f.severity].bg }}">
+    <div class="finding-title">
+        <span class="badge" style="background: {{ SEV[f.severity].color }}; color: #fff">{{ SEV[f.severity].label }}</span>
+        {{ f.title }}
+    </div>
+    <div class="finding-detail">{{ f.detail }}</div>
+    {% if f.remediation %}
+    <div class="finding-remediation">
+        <div class="remediation-label">Remediation</div>
+        <div class="remediation-command">{{ f.remediation }}</div>
+    </div>
+    {% endif %}
+    <div class="finding-status">
+        Category: {{ f.category }}
+        {% if f.status and f.status != "open" %} &middot; Status: {{ f.status }}{% endif %}
+    </div>
+</div>

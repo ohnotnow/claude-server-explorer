@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Security Report — {{ hostname }}{% endblock %}
+
+{% block body %}
+{% include 'partials/header.html' %}
+
+{# Analysis #}
+{% if server_analysis_paragraphs or server_recommendations %}
+<div class="section"><div class="wrap">
+    <h2 class="section-title">Analysis</h2>
+    <div class="analysis-block">
+        {% for paragraph in server_analysis_paragraphs %}
+            <p>{{ paragraph }}</p>
+        {% endfor %}
+        {% if server_recommendations %}
+        <h3 class="section-title" style="margin-top: 20px; font-size: 1.125rem">Recommendations</h3>
+        <ul class="rec-list">
+            {% for rec in server_recommendations %}
+            <li><span class="rec-num">{{ loop.index }}.</span>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div></div>
+{% endif %}
+
+{# Security Analysis #}
+{% if security_analysis_paragraphs or security_recommendations %}
+<div class="section"><div class="wrap">
+    <h2 class="section-title">Security Analysis</h2>
+    <div class="analysis-block">
+        {% for paragraph in security_analysis_paragraphs %}
+            <p>{{ paragraph }}</p>
+        {% endfor %}
+        {% if security_recommendations %}
+        <h3 class="section-title" style="margin-top: 20px; font-size: 1.125rem">Security Recommendations</h3>
+        <ul class="rec-list">
+            {% for rec in security_recommendations %}
+            <li><span class="rec-num">{{ loop.index }}.</span>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div></div>
+{% endif %}
+
+{# Stats row with health score #}
+<div class="section"><div class="wrap">
+    <div class="stats">
+        <div class="stat stat-health" style="background: {{ server_score_bg }}">
+            <div class="stat-value" style="color: {{ server_score_colour }}">{{ score }}</div>
+            <div class="stat-label">Health &middot; {{ server_score_label }}</div>
+            {% if fleet.total > 1 %}
+            <div style="font-size: 0.8125rem; color: #666; margin-top: 4px">Rank {{ rank }} of {{ fleet.total }}</div>
+            {% endif %}
+        </div>
+        {% for sev_key in ["critical", "high", "medium", "low", "info"] %}
+            {% set count = counts[sev_key] %}
+            {% set conf = SEV[sev_key] %}
+            <div class="stat" style="background: {{ conf.bg if count else '#fff' }}">
+                <div class="stat-value" style="color: {{ conf.color if count else '' }}">{{ count }}</div>
+                <div class="stat-label">{{ conf.label }}</div>
+            </div>
+        {% endfor %}
+    </div>
+</div></div>
+
+{# Config checks #}
+{% if checks %}
+<div class="section"><div class="wrap">
+    {% include 'partials/config_table.html' %}
+</div></div>
+{% endif %}
+
+{# Findings #}
+{% if findings %}
+<div class="section"><div class="wrap">
+    <h2 class="section-title">Findings</h2>
+    <div class="findings-grid">
+        {% for f in findings %}
+            {% include 'partials/finding.html' %}
+        {% endfor %}
+    </div>
+</div></div>
+{% endif %}
+
+{# Package vulnerabilities #}
+{% if vulns %}
+<div class="section"><div class="wrap">
+    {% include 'partials/vuln_table.html' %}
+</div></div>
+{% endif %}
+
+{# Services #}
+{% if services %}
+<div class="section"><div class="wrap">
+    <h2 class="section-title">Listening Services</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th style="width: 80px">Port</th><th style="width: 80px">Protocol</th><th>Process</th><th>Description</th></tr></thead>
+            <tbody>
+                {% for s in services %}
+                <tr>
+                    <td>{{ s.port }}</td>
+                    <td>{{ s.protocol or "tcp" }}</td>
+                    <td>{{ s.process }}</td>
+                    <td style="color: #666">{{ s.description }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div></div>
+{% endif %}
+
+{# Containers #}
+{% if containers %}
+<div class="section"><div class="wrap">
+    <h2 class="section-title">Containers</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Name</th><th>Image</th><th>Ports</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for c in containers %}
+                <tr>
+                    <td>{{ c.container_name }}</td>
+                    <td style="font-size: 0.875rem">{{ c.image }}</td>
+                    <td>{{ c.ports }}</td>
+                    <td>{{ c.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div></div>
+{% endif %}
+
+{# Scan history #}
+{% if scans %}
+<div class="section"><div class="wrap">
+    <h2 class="section-title">Scan History</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th style="width: 160px">Date</th><th>Summary</th></tr></thead>
+            <tbody>
+                {% for sc in scans %}
+                <tr>
+                    <td>{{ sc.scanned_at | format_date }}</td>
+                    <td>{{ sc.summary or "—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div></div>
+{% endif %}
+
+{# Empty state #}
+{% if not findings and not checks and not vulns %}
+<div class="section"><div class="wrap">
+    <div class="analysis-block" style="text-align: center; padding: 48px">
+        <p style="font-size: 1.125rem; color: #558B2F; font-weight: 600">No security scan data yet</p>
+        <p>Run <code style="background: #F5F5F5; padding: 2px 8px; border-radius: 4px">security-explore</code> against this server to generate findings.</p>
+    </div>
+</div></div>
+{% endif %}
+
+{% include 'partials/footer.html' %}
+{% endblock %}

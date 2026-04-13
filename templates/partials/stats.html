@@ -1,0 +1,39 @@
+<div class="stats">
+    {# Health score card with expandable explanation #}
+    <div class="stat stat-health" style="background: {{ fleet_score_bg }}">
+        <div class="stat-value" style="color: {{ fleet_score_colour }}">{{ fleet_score }}</div>
+        <div class="stat-label">Health &middot; {{ fleet_score_label }}</div>
+        <details>
+            <summary>What does this mean?</summary>
+            <div class="explain">
+                Health scores range from 100 (no issues) to 0 (critical problems).
+                Each critical finding reduces the score by 20 points, high by 10,
+                medium by 3, and low by 1. Use it as a rough guide to where
+                attention is needed most.
+            </div>
+        </details>
+    </div>
+
+    {# Severity cards — link to findings section #}
+    {% for sev_key in ["critical", "high", "medium"] %}
+        {% set count = total_counts[sev_key] %}
+        {% set conf = SEV[sev_key] %}
+        {% if sev_key in ("critical", "high") and count > 0 %}
+            <a href="#findings-{{ sev_key }}" class="stat" style="background: {{ conf.bg }}">
+        {% else %}
+            <div class="stat" style="background: {{ conf.bg }}">
+        {% endif %}
+                <div class="stat-value" style="color: {{ conf.color if count else '' }}">{{ count }}</div>
+                <div class="stat-label">{{ conf.label }}</div>
+        {% if sev_key in ("critical", "high") and count > 0 %}
+            </a>
+        {% else %}
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <div class="stat" style="background: {{ SEV.info.bg }}">
+        <div class="stat-value" style="color: {{ SEV.info.color if healthy_count else '' }}">{{ healthy_count }}</div>
+        <div class="stat-label">Healthy</div>
+    </div>
+</div>

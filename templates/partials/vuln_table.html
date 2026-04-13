@@ -1,0 +1,42 @@
+<h2 class="section-title">Package Vulnerabilities</h2>
+<div class="section-intro">
+    {{ vulns | length }} known CVE{{ "s" if vulns | length != 1 }}
+    {% if kev_count %}
+        &middot; {{ kev_count }} on CISA KEV (actively exploited)
+    {% endif %}
+</div>
+{% if kev_count %}
+<div class="kev-notice">
+    The vulnerabilities marked <strong>KEV</strong> in the table below are confirmed to be
+    under active exploitation in the wild. These are not theoretical risks &mdash; attackers
+    are using them right now and they should be treated as emergencies.
+    The <strong>EPSS</strong> column is the estimated probability that a vulnerability will be
+    exploited in the next 30 days.
+</div>
+{% endif %}
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>CVE</th><th>Package</th><th>Installed</th><th>Fixed</th><th>KEV</th><th>EPSS</th><th>Severity</th></tr>
+        </thead>
+        <tbody>
+            {% for v in vulns %}
+            <tr>
+                <td>
+                    {% if v.cve_id %}
+                    <a href="https://nvd.nist.gov/vuln/detail/{{ v.cve_id }}" target="_blank" rel="noopener" class="cve-link">{{ v.cve_id }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td>{{ v.package_name }}</td>
+                <td>{{ v.installed_version }}</td>
+                <td>{{ v.fixed_version or "—" }}</td>
+                <td{% if v.on_kev %} class="kev-yes"{% endif %}>{{ "KEV" if v.on_kev else "" }}</td>
+                <td class="{{ v.epss_score | epss_class }}">{{ v.epss_score | epss_display }}</td>
+                <td><span class="badge" style="background: {{ SEV[v.severity or 'info'].bg }}; color: {{ SEV[v.severity or 'info'].color }}">{{ SEV[v.severity or 'info'].label }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,27 @@
+<div class="server-card" id="server-{{ srv.hostname }}" data-worst="{{ srv.worst }}" data-severities="{{ srv.severities }}" data-hostname="{{ srv.hostname }}">
+    <div class="card-name">{{ srv.hostname }}</div>
+    {% if srv.purpose %}
+        <div class="card-purpose">{{ srv.purpose }}</div>
+    {% elif srv.os %}
+        <div class="card-purpose">{{ srv.os }}</div>
+    {% endif %}
+
+    {% if srv.critical_high_findings %}
+        <ul class="card-findings">
+            {% for f in srv.critical_high_findings %}
+            <li>
+                <span class="bullet" style="background: {{ SEV[f.severity].color }}"></span>
+                <span>{{ f.title }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="card-allclear">All clear &mdash; no critical or high findings</div>
+    {% endif %}
+
+    {% if srv.other_summary %}
+        <div class="card-other">+ {{ srv.other_summary }}</div>
+    {% endif %}
+
+    <div class="card-scanned">Scanned {{ srv.scanned }}</div>
+</div>
