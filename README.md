@@ -80,7 +80,7 @@ Options:
 
 External API lookups (CISA KEV catalogue, EPSS scores) run on your local machine, so they work regardless of the remote server's network access.
 
-Package index refreshes (`apt update`, `dnf check-update`) still run on the remote server. If your servers sit behind private subnets (common in `.ac.uk` and other JANET-connected environments), their package managers may need a proxy. Most servers already have this configured, but if not, copy the example config and add your proxy URL:
+Package index refreshes (`apt update`, `dnf check-update`) still run on the remote server. If your servers sit behind private subnets their package managers may need a proxy. Most servers already have this configured, but if not, copy the example config and add your proxy URL:
 
 ```bash
 cp .server-explorer.conf.example .server-explorer.conf
@@ -109,7 +109,7 @@ Report templates are in `templates/` with CSS at `templates/css/styles.css`. The
 
 Some of the skills need `sudo` over SSH -- checking which process owns a port, reading `/etc/shadow`, inspecting firewall rules. The obvious first question is "what can it actually do on my box?"
 
-Short answer: you create a dedicated user with a sudoers file that only permits specific read-only commands. No package installs, no service restarts, no file writes.
+Short answer: you create a dedicated user with a sudoers file that only permits specific read-only commands. Block package installs, service restarts, file writes, etc.
 
 ### 1. Create a `claude` user
 
