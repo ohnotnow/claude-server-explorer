@@ -155,11 +155,17 @@ The JSON is keyed by CVE ID. For each CVE, check `releases.<codename>` — if `s
 
 Collect the CVE IDs from either approach for use in the KEV and EPSS steps below, and record each one as a row in the `package_vulns` table.
 
-#### Kernel CVE extraction (all distros)
+#### Kernel CVE extraction
 
-The Linux kernel needs special handling because Raspberry Pi (and other vendor) kernels come from a different source tree to the Debian `linux` package. The Debian Security Tracker fix versions use Debian package versioning (e.g. `6.1.147-1`), while RPi kernels use epoch-prefixed versions (e.g. `1:6.6.31-1+rpt1`). This means `dpkg --compare-versions` will silently give wrong results — **do not use the Debian Security Tracker for kernel CVEs**.
+For **standard distro kernels** (Debian's `linux` package, Ubuntu, RHEL, etc.), kernel CVEs are handled by the normal vendor tooling — the Debian Security Tracker, `dnf check-update --security`, and so on. No special steps are needed; the CVE extraction in the previous section covers the kernel just like any other package.
 
-Instead, use the kernel.org CVE git repository, which tracks fix versions per upstream branch:
+**Vendor-patched kernels** (Raspberry Pi, Oracle UEK, and similar) need a different approach. These kernels come from a separate source tree and use their own version scheme — for example, RPi kernels have epoch-prefixed versions like `1:6.6.31-1+rpt1` rather than standard Debian versioning like `6.1.147-1`. The Debian Security Tracker's fix versions refer to the Debian `linux` package, so `dpkg --compare-versions` will silently give wrong results against a vendor kernel.
+
+**How to tell which you're on:** check the output of `uname -r`. Standard distro kernels look like `6.1.0-28-amd64` or `5.15.0-91-generic`. Vendor-patched kernels have distinctive suffixes — `+rpt1` for Raspberry Pi, `uek` for Oracle, and so on. If `uname -r` contains a vendor suffix, use the kernel.org approach below.
+
+##### Kernel.org CVE lookup (vendor-patched kernels only)
+
+The kernel.org CVE git repository tracks fix versions per upstream branch, which makes it reliable regardless of how the vendor packages its kernel.
 
 1. Get the running kernel's upstream version on the server:
 
@@ -167,11 +173,11 @@ Instead, use the kernel.org CVE git repository, which tracks fix versions per up
 ssh $ARGUMENTS "uname -r | sed 's/+.*//' | sed 's/-.*//' "
 ```
 
-This gives the upstream version (e.g. `6.6.31` or `6.12.34`), stripping the RPi/distro suffix.
+This strips the vendor/distro suffix to give the upstream version (e.g. `6.6.31` or `6.12.34`).
 
 2. Determine the kernel's major.minor branch (e.g. `6.6` or `6.12`).
 
-3. For each kernel CVE to check (at minimum, check all Linux kernel entries from the KEV catalog — see step 3), fetch the fix data locally:
+3. For each kernel CVE to check (at minimum, check all Linux kernel entries from the KEV catalogue — see step 3), fetch the fix data locally:
 
 ```bash
 curl -s "https://git.kernel.org/pub/scm/linux/security/vulns.git/plain/cve/published/<year>/<CVE-ID>.json"
