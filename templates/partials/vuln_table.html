@@ -1,42 +1,75 @@
 <h2 class="section-title">Package Vulnerabilities</h2>
 <div class="section-intro">
-    {{ vulns | length }} known CVE{{ "s" if vulns | length != 1 }}
+    {{ vulns | length }} known CVE{{ "s" if vulns | length != 1 }} across {{ vuln_groups | length }} package{{ "s" if vuln_groups | length != 1 }}
     {% if kev_count %}
         &middot; {{ kev_count }} on CISA KEV (actively exploited)
     {% endif %}
 </div>
 {% if kev_count %}
 <div class="kev-notice">
-    The vulnerabilities marked <strong>KEV</strong> in the table below are confirmed to be
+    The packages marked <strong>KEV</strong> below have vulnerabilities confirmed to be
     under active exploitation in the wild. These are not theoretical risks &mdash; attackers
     are using them right now and they should be treated as emergencies.
-    The <strong>EPSS</strong> column is the estimated probability that a vulnerability will be
-    exploited in the next 30 days.
 </div>
 {% endif %}
 <div class="table-wrap">
     <table>
         <thead>
-            <tr><th>CVE</th><th>Package</th><th>Installed</th><th>Fixed</th><th>KEV</th><th>EPSS</th><th>Severity</th></tr>
+            <tr><th>Package</th><th>Installed</th><th>Update to</th><th>CVEs</th><th>KEV</th><th>Worst EPSS</th><th>Severity</th></tr>
         </thead>
         <tbody>
-            {% for v in vulns %}
-            <tr>
-                <td>
-                    {% if v.cve_id %}
-                    <a href="https://nvd.nist.gov/vuln/detail/{{ v.cve_id }}" target="_blank" rel="noopener" class="cve-link">{{ v.cve_id }}</a>
-                    {% else %}
-                    —
-                    {% endif %}
+            {% for g in vuln_groups %}
+            <tr class="vuln-pkg-row{% if g.kev_count %} vuln-pkg-kev{% endif %}">
+                <td class="vuln-pkg-name">{{ g.package_name }}</td>
+                <td>{{ g.installed_version }}</td>
+                <td>{{ g.fixed_version }}</td>
+                <td>{{ g.cve_count }}</td>
+                <td{% if g.kev_count %} class="kev-yes"{% endif %}>{{ ("%d KEV" % g.kev_count) if g.kev_count else "" }}</td>
+                <td class="{{ g.max_epss | epss_class }}">{{ g.max_epss | epss_display }}</td>
+                <td><span class="badge" style="background: {{ SEV[g.worst_severity or 'info'].bg }}; color: {{ SEV[g.worst_severity or 'info'].color }}">{{ SEV[g.worst_severity or 'info'].label }}</span></td>
+            </tr>
+            <tr class="vuln-detail-row">
+                <td colspan="7">
+                    <details>
+                        <summary>{{ g.cve_count }} CVE{{ "s" if g.cve_count != 1 }} in {{ g.package_name }}</summary>
+                        <table class="vuln-detail-table">
+                            <thead>
+                                <tr><th>CVE</th><th>Fixed in</th><th>KEV</th><th>EPSS</th><th>Severity</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for v in g.cves %}
+                                <tr>
+                                    <td>
+                                        {% if v.cve_id %}
+                                        <a href="https://nvd.nist.gov/vuln/detail/{{ v.cve_id }}" target="_blank" rel="noopener" class="cve-link">{{ v.cve_id }}</a>
+                                        {% else %}
+                                        —
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ v.fixed_version or "—" }}</td>
+                                    <td{% if v.on_kev %} class="kev-yes"{% endif %}>{{ "KEV" if v.on_kev else "" }}</td>
+                                    <td class="{{ v.epss_score | epss_class }}">{{ v.epss_score | epss_display }}</td>
+                                    <td><span class="badge" style="background: {{ SEV[v.severity or 'info'].bg }}; color: {{ SEV[v.severity or 'info'].color }}">{{ SEV[v.severity or 'info'].label }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </details>
                 </td>
-                <td>{{ v.package_name }}</td>
-                <td>{{ v.installed_version }}</td>
-                <td>{{ v.fixed_version or "—" }}</td>
-                <td{% if v.on_kev %} class="kev-yes"{% endif %}>{{ "KEV" if v.on_kev else "" }}</td>
-                <td class="{{ v.epss_score | epss_class }}">{{ v.epss_score | epss_display }}</td>
-                <td><span class="badge" style="background: {{ SEV[v.severity or 'info'].bg }}; color: {{ SEV[v.severity or 'info'].color }}">{{ SEV[v.severity or 'info'].label }}</span></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% if update_cmd %}
+<div class="update-cmd-block">
+    <div class="update-cmd-label">Update these packages</div>
+    <pre class="update-cmd"><code>{{ update_cmd.command }}</code></pre>
+    {% if update_cmd.reboot %}
+    <pre class="update-cmd update-cmd-reboot"><code>{{ update_cmd.reboot }}</code></pre>
+    {% endif %}
+    <div class="update-cmd-alt">
+        Or update everything in one go: <code>{{ update_cmd.full_upgrade }}</code>
+    </div>
+</div>
+{% endif %}

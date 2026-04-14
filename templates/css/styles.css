@@ -379,6 +379,91 @@ tbody tr:hover { background: #FAFAFA; }
 .epss-med  { color: #E87722; font-weight: 600; }
 .epss-low  { color: #666; }
 
+/* ── Grouped vuln table ────────────────────── */
+
+.vuln-pkg-row { font-weight: 500; }
+.vuln-pkg-row td { border-bottom: none; }
+.vuln-pkg-kev { background: #FDF3F1; }
+.vuln-pkg-name { font-weight: 600; }
+
+.vuln-detail-row td {
+    padding: 0 16px 12px;
+    border-bottom: 2px solid #E6E6E6;
+}
+.vuln-detail-row details summary {
+    font-size: 0.8125rem;
+    color: #005398;
+    cursor: pointer;
+    list-style: none;
+    padding: 4px 0;
+}
+.vuln-detail-row details summary::-webkit-details-marker { display: none; }
+.vuln-detail-row details summary::marker { display: none; }
+.vuln-detail-row details summary::before { content: "\25B8\00a0"; }
+.vuln-detail-row details[open] summary::before { content: "\25BE\00a0"; }
+
+.vuln-detail-table {
+    margin-top: 8px;
+    font-size: 0.875rem;
+    border: 1px solid #E6E6E6;
+    border-radius: 6px;
+}
+.vuln-detail-table th {
+    background: #F5F5F5;
+    color: #4D4D4D;
+    font-size: 0.8125rem;
+    padding: 6px 12px;
+}
+.vuln-detail-table td {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+}
+
+/* ── Update command block ──────────────────── */
+
+.update-cmd-block {
+    margin-top: 16px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px 24px;
+    border-left: 4px solid #005398;
+}
+.update-cmd-label {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: #323232;
+    margin-bottom: 10px;
+}
+.update-cmd {
+    background: #1E1E2E;
+    color: #CDD6F4;
+    padding: 14px 18px;
+    border-radius: 6px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 0 0 8px;
+    cursor: text;
+    user-select: all;
+    -webkit-user-select: all;
+}
+.update-cmd code { color: inherit; background: none; }
+.update-cmd-reboot {
+    border-left: 3px solid #E87722;
+}
+.update-cmd-alt {
+    font-size: 0.8125rem;
+    color: #666;
+    margin-top: 10px;
+}
+.update-cmd-alt code {
+    background: #F0F0F0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8125rem;
+}
+
 /* ── Config checks ──────────────────────────── */
 
 .check-result {

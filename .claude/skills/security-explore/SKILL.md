@@ -126,6 +126,65 @@ Count the pending security updates. More than a handful suggests patching is not
 
 Also check: is automatic patching configured? Look for `unattended-upgrades` on Debian/Ubuntu or `dnf-automatic` on RHEL-family systems. If automatic patching is not set up, flag it as a recommendation.
 
+#### CVE extraction for apt-based systems
+
+`apt` does not include CVE IDs in its upgrade output, unlike `dnf`/`yum`. Without CVE IDs the KEV and EPSS lookups in steps 3 and 4 have nothing to work with. Extract them using one of these approaches:
+
+**If `debsecan` is installed** on the server (check with `which debsecan` via SSH), run it:
+
+```bash
+ssh $ARGUMENTS "debsecan --only-fixed --format detail"
+```
+
+This lists every CVE fixed by an available update, one per line, with the package name and fix version. Parse the output to build a map of CVE IDs to packages.
+
+**Otherwise**, query the Debian Security Tracker API locally. First, get the release codename and map upgradable packages to their source package names:
+
+```bash
+ssh $ARGUMENTS "lsb_release -cs"
+ssh $ARGUMENTS "apt list --upgradable 2>/dev/null | tail -n +2 | cut -d/ -f1 | xargs dpkg-query -W -f '\${source:Package}\n' 2>/dev/null | sort -u"
+```
+
+Then fetch CVE data for each unique source package on the local machine:
+
+```bash
+curl -s "https://security-tracker.debian.org/tracker/source-package/<source_package>.json"
+```
+
+The JSON is keyed by CVE ID. For each CVE, check `releases.<codename>` — if `status` is `"resolved"` and the `fixed_version` is among the available upgrades, that CVE is fixed by a pending update. To keep API calls manageable when backlogs are large, prioritise security-critical source packages (openssh, openssl, linux, sudo, systemd, curl, docker) and work outward.
+
+Collect the CVE IDs from either approach for use in the KEV and EPSS steps below, and record each one as a row in the `package_vulns` table.
+
+#### Kernel CVE extraction (all distros)
+
+The Linux kernel needs special handling because Raspberry Pi (and other vendor) kernels come from a different source tree to the Debian `linux` package. The Debian Security Tracker fix versions use Debian package versioning (e.g. `6.1.147-1`), while RPi kernels use epoch-prefixed versions (e.g. `1:6.6.31-1+rpt1`). This means `dpkg --compare-versions` will silently give wrong results — **do not use the Debian Security Tracker for kernel CVEs**.
+
+Instead, use the kernel.org CVE git repository, which tracks fix versions per upstream branch:
+
+1. Get the running kernel's upstream version on the server:
+
+```bash
+ssh $ARGUMENTS "uname -r | sed 's/+.*//' | sed 's/-.*//' "
+```
+
+This gives the upstream version (e.g. `6.6.31` or `6.12.34`), stripping the RPi/distro suffix.
+
+2. Determine the kernel's major.minor branch (e.g. `6.6` or `6.12`).
+
+3. For each kernel CVE to check (at minimum, check all Linux kernel entries from the KEV catalog — see step 3), fetch the fix data locally:
+
+```bash
+curl -s "https://git.kernel.org/pub/scm/linux/security/vulns.git/plain/cve/published/<year>/<CVE-ID>.json"
+```
+
+4. In the returned JSON, look through **all** `containers.cna.affected[]` blocks (there are usually two — one with git commits, one with semver data). In the semver entries, find entries where `versionType` is `"semver"`, `status` is `"unaffected"`, and `lessThanOrEqual` matches the kernel branch (e.g. `"6.6.*"`). The `version` field of that entry is the first fixed version in that branch.
+
+5. Compare the server's upstream kernel version against the fix version. If the server is running an older version, it is vulnerable.
+
+If the kernel.org CVE repo does not have an entry for a given CVE (common for CVEs older than ~2023), the vulnerability predates the 6.x kernel series and is not relevant to current kernels.
+
+Record any kernel CVEs found as rows in `package_vulns` with `package_name` set to `linux-kernel`.
+
 ### 3. Known Exploited Vulnerabilities (KEV)
 
 The CISA KEV catalog lists vulnerabilities confirmed to be under active exploitation in the wild. Anything matching this list is an emergency — not theoretical, not "might be exploited one day," but actively being used by attackers right now.
@@ -141,7 +200,7 @@ This is a local Bash call — do **not** run it via SSH. Running it locally mean
 Each entry has `cveID`, `vendorProject`, `product`, `vulnerabilityName`, and `knownRansomwareCampaignUse` fields.
 
 Cross-reference against:
-- CVE IDs from the patch gap check (yum/dnf report these directly in their output)
+- CVE IDs from the patch gap check (yum/dnf report these directly; for apt-based systems, use the CVE extraction step above)
 - Installed software names and versions against the `vendorProject` and `product` fields
 
 Any match is a **critical** finding. If `knownRansomwareCampaignUse` is "Known", escalate further — this means ransomware gangs are actively using it.

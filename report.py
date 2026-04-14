@@ -229,6 +229,97 @@ def epss_class(score) -> str:
     return "epss-low"
 
 
+def group_vulns_by_package(vulns: list) -> list:
+    """Group package_vulns rows by package, with summary stats per group."""
+    groups = {}
+    for v in vulns:
+        pkg = v.get("package_name", "unknown")
+        if pkg not in groups:
+            groups[pkg] = {
+                "package_name": pkg,
+                "installed_version": v.get("installed_version", ""),
+                "fixed_version": v.get("fixed_version", ""),
+                "cve_count": 0,
+                "kev_count": 0,
+                "max_epss": None,
+                "worst_severity": "info",
+                "cves": [],
+            }
+        g = groups[pkg]
+        g["cve_count"] += 1
+        g["cves"].append(v)
+        if v.get("on_kev"):
+            g["kev_count"] += 1
+        epss = v.get("epss_score")
+        if epss is not None and (g["max_epss"] is None or epss > g["max_epss"]):
+            g["max_epss"] = epss
+        # Track the highest fixed_version (lexicographic is imperfect but
+        # good enough for same-source versions like deb12u7 vs deb12u14)
+        if v.get("fixed_version", "") > g["fixed_version"]:
+            g["fixed_version"] = v["fixed_version"]
+        # Track worst severity
+        sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+        cur = sev_order.get(g["worst_severity"], 4)
+        new = sev_order.get(v.get("severity", "info"), 4)
+        if new < cur:
+            g["worst_severity"] = v["severity"]
+
+    result = list(groups.values())
+    # Sort: KEV first, then by max EPSS descending
+    result.sort(key=lambda g: (-g["kev_count"], -(g["max_epss"] or 0)))
+    return result
+
+
+def build_update_command(vuln_groups: list, os_text: str) -> dict:
+    """Build a distro-specific update command from the vulnerable packages."""
+    if not vuln_groups:
+        return {}
+
+    os_lower = (os_text or "").lower()
+
+    # Common source-to-binary package mappings for apt
+    APT_BINARY_MAP = {
+        "openssh": ["openssh-server", "openssh-client"],
+        "openssl": ["openssl", "libssl3"],
+        "curl": ["curl", "libcurl4"],
+        "sudo": ["sudo"],
+        "systemd": ["systemd"],
+    }
+
+    pkg_names = [g["package_name"] for g in vuln_groups]
+    has_kernel = any("kernel" in p or "linux" in p for p in pkg_names)
+    non_kernel = [p for p in pkg_names if "kernel" not in p and "linux" not in p]
+
+    if any(x in os_lower for x in ("debian", "ubuntu", "raspbian")):
+        # Expand source names to likely binary package names
+        bins = []
+        for src in non_kernel:
+            bins.extend(APT_BINARY_MAP.get(src, [src]))
+        parts = ["sudo apt update"]
+        if bins:
+            parts.append(f"sudo apt install --only-upgrade {' '.join(sorted(bins))}")
+        if has_kernel:
+            parts.append("sudo apt install --only-upgrade 'linux-image*'")
+        cmd = " && \\\n  ".join(parts)
+        reboot = "sudo reboot  # required to load the new kernel" if has_kernel else None
+        full = "sudo apt update && sudo apt upgrade"
+        return {"command": cmd, "reboot": reboot, "full_upgrade": full}
+
+    elif any(x in os_lower for x in ("rhel", "centos", "rocky", "alma", "fedora")):
+        bins = non_kernel + (["kernel"] if has_kernel else [])
+        cmd = f"sudo dnf update {' '.join(sorted(bins))}"
+        reboot = "sudo reboot  # required to load the new kernel" if has_kernel else None
+        full = "sudo dnf update --security"
+        return {"command": cmd, "reboot": reboot, "full_upgrade": full}
+
+    elif "alpine" in os_lower:
+        cmd = "sudo apk upgrade"
+        reboot = "sudo reboot" if has_kernel else None
+        return {"command": cmd, "reboot": reboot, "full_upgrade": cmd}
+
+    return {}
+
+
 def findings_by_host(all_findings: list) -> dict:
     grouped = {}
     for f in all_findings:
@@ -410,6 +501,8 @@ def build_server_context(conn, hostname: str) -> dict:
         "rank": rank,
         "findings": findings,
         "vulns": vulns,
+        "vuln_groups": group_vulns_by_package(vulns),
+        "update_cmd": build_update_command(group_vulns_by_package(vulns), os_text),
         "kev_count": sum(1 for v in vulns if v.get("on_kev")),
         "checks": checks,
         "checks_summary": " \u00b7 ".join(summary_parts),
